@@ -45,41 +45,56 @@ def train(data):
 
         data_set.addSample(input_data,output_data)
 
-    print "Training Data set length: " + str(len(data_set))
-
     net = buildNetwork(INPUT,HIDDEN,OUTPUT)
     trainer = BackpropTrainer(net,data_set)
     trainer.trainUntilConvergence()
 
     return net
 
-def day_prediction(data,real_data):
+def day_prediction(data):
     net = train(data)
-
-    log = "Next day prediction: " + str(net.activate(data[-10:])[0]*100) + "% Real data: " + str(real_data*100) + "%"
-    print log
-
-    with open("log.txt","a") as fp:
-        fp.write(log + "\n")
+    return net.activate(data[-10:])[0]
 
 if __name__ == "__main__":
     import datetime
+    import os
+    import multiprocessing
+
+    if not os.path.isdir("log"):
+        os.makedirs("log")
+    log_name = datetime.datetime.now().strftime("%Y-%m-%d_%H%M.log")
+    log_path = os.path.join("log",log_name)
 
     start_time = datetime.datetime.now()
     print start_time
 
     data = getData()
 
+    pool = multiprocessing.Pool()
+
+    predictions = []
     for idx in range(len(data)):
         input_data = [data[idx + i] for i in range(30)]
 
         try:
-            expected_data = data[idx + 30]
+            expectation = data[idx + 30]
         except IndexError:
             break
 
-        print "Progress: " + str(idx) + " / " + str(len(data)-30)
-        day_prediction(input_data,expected_data)
+        predictions.append((pool.apply_async(day_prediction,(input_data,)),expectation))
+
+
+    progress = 0
+    for prediction_worker,expectation in predictions:
+        prediction = prediction_worker.get()
+        with open(log_path,"a") as fp:
+            fp.write(str(prediction*100) + ";" + str(expectation*100) + "\n")
+
+        progress += 1
+        print "Prediction: " + str(prediction*100) + " % Reality: " + str(expectation*100) + " % Sample: " + str(progress) + " / " + str(len(data)-30)
+
+    pool.close()
+    pool.join()
 
     end_time = datetime.datetime.now()
     print end_time
