@@ -16,12 +16,14 @@ def getData():
     return data
 
 def train(data):
-    from pybrain.tools.shortcuts import buildNetwork
+    from pybrain.structure import RecurrentNetwork
     from pybrain.supervised.trainers import BackpropTrainer
     from pybrain.datasets import SupervisedDataSet
+    from pybrain.structure import LinearLayer, SigmoidLayer
+    from pybrain.structure import FullConnection
 
     INPUT = 10
-    HIDDEN = 40
+    HIDDEN = 1
     OUTPUT = 1
 
     data_set = SupervisedDataSet(INPUT,OUTPUT)
@@ -45,11 +47,19 @@ def train(data):
 
         data_set.addSample(input_data,output_data)
 
-    net = buildNetwork(INPUT,HIDDEN,OUTPUT)
-    trainer = BackpropTrainer(net,data_set)
+    n = RecurrentNetwork()
+    n.addInputModule(LinearLayer(INPUT, name='in'))
+    n.addModule(SigmoidLayer(HIDDEN, name='hidden'))
+    n.addOutputModule(LinearLayer(OUTPUT, name='out'))
+    n.addConnection(FullConnection(n['in'], n['hidden'], name='c1'))
+    n.addConnection(FullConnection(n['hidden'], n['out'], name='c2'))
+    n.addRecurrentConnection(FullConnection(n['hidden'], n['hidden'], name='c3'))
+    n.sortModules()
+
+    trainer = BackpropTrainer(n,data_set)
     trainer.trainUntilConvergence()
 
-    return net
+    return n
 
 def day_prediction(data):
     net = train(data)
@@ -81,17 +91,18 @@ if __name__ == "__main__":
         except IndexError:
             break
 
-        predictions.append((pool.apply_async(day_prediction,(input_data,)),expectation))
+        print "Adding task: " + str(idx)
+        predictions.append((pool.apply_async(day_prediction,(input_data,)),expectation,idx))
 
+    print "Waiting..."
 
-    progress = 0
-    for prediction_worker,expectation in predictions:
+    for prediction_worker,expectation,idx in predictions[:]:
         prediction = prediction_worker.get()
         with open(log_path,"a") as fp:
-            fp.write(str(prediction*100) + ";" + str(expectation*100) + "\n")
+            fp.write(str('{0:.2f}'.format(prediction*100)) + ";" + str(expectation*100) + "\n")
 
-        progress += 1
-        print "Prediction: " + str(prediction*100) + " % Reality: " + str(expectation*100) + " % Sample: " + str(progress) + " / " + str(len(data)-30)
+        print "Prediction: " + str('{0:.2f}'.format(prediction*100)) + " % Reality: " + str(expectation*100) + " % Sample: " + str(idx) + " / " + str(len(data)-30)
+        predictions.remove((prediction_worker,expectation,idx))
 
     pool.close()
     pool.join()
