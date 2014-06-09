@@ -1,3 +1,9 @@
+INPUT = 10
+HIDDEN = 40
+OUTPUT = 1
+
+INPUT_DATA_RANGE = 30
+
 def getData():
     import xlrd
 
@@ -16,54 +22,30 @@ def getData():
     return data
 
 def train(data):
-    from pybrain.structure import RecurrentNetwork
+    from pybrain.tools.shortcuts import buildNetwork
     from pybrain.supervised.trainers import BackpropTrainer
     from pybrain.datasets import SupervisedDataSet
-    from pybrain.structure import LinearLayer, SigmoidLayer
-    from pybrain.structure import FullConnection
-
-    INPUT = 10
-    HIDDEN = 1
-    OUTPUT = 1
 
     data_set = SupervisedDataSet(INPUT,OUTPUT)
     for idx in range(len(data)):
-        input_data = (data[idx],
-                      data[idx + 1],
-                      data[idx + 2],
-                      data[idx + 3],
-                      data[idx + 4],
-                      data[idx + 5],
-                      data[idx + 6],
-                      data[idx + 7],
-                      data[idx + 8],
-                      data[idx + 9],
-                     )
+        input_data = tuple([data[idx + i] for i in range(INPUT)])
 
         try:
-            output_data = (data[idx + 10])
+            output_data = (-1) if data[idx + INPUT] <= 0 else (1) # Instead of actual value just a positive or negative
         except IndexError:
             break
 
         data_set.addSample(input_data,output_data)
 
-    n = RecurrentNetwork()
-    n.addInputModule(LinearLayer(INPUT, name='in'))
-    n.addModule(SigmoidLayer(HIDDEN, name='hidden'))
-    n.addOutputModule(LinearLayer(OUTPUT, name='out'))
-    n.addConnection(FullConnection(n['in'], n['hidden'], name='c1'))
-    n.addConnection(FullConnection(n['hidden'], n['out'], name='c2'))
-    n.addRecurrentConnection(FullConnection(n['hidden'], n['hidden'], name='c3'))
-    n.sortModules()
-
-    trainer = BackpropTrainer(n,data_set)
+    net = buildNetwork(INPUT,HIDDEN,OUTPUT)
+    trainer = BackpropTrainer(net,data_set)
     trainer.trainUntilConvergence()
 
-    return n
+    return net
 
 def day_prediction(data):
     net = train(data)
-    return net.activate(data[-10:])[0]
+    return net.activate(data[-INPUT:])[0]
 
 if __name__ == "__main__":
     import datetime
@@ -84,10 +66,10 @@ if __name__ == "__main__":
 
     predictions = []
     for idx in range(len(data)):
-        input_data = [data[idx + i] for i in range(30)]
+        input_data = [data[idx + i] for i in range(INPUT_DATA_RANGE)]
 
         try:
-            expectation = data[idx + 30]
+            expectation = data[idx + INPUT_DATA_RANGE]
         except IndexError:
             break
 
@@ -101,7 +83,7 @@ if __name__ == "__main__":
         with open(log_path,"a") as fp:
             fp.write(str('{0:.2f}'.format(prediction*100)) + ";" + str(expectation*100) + "\n")
 
-        print "Prediction: " + str('{0:.2f}'.format(prediction*100)) + " % Reality: " + str(expectation*100) + " % Sample: " + str(idx) + " / " + str(len(data)-30)
+        print "Prediction: " + str('{0:.2f}'.format(prediction*100)) + " % Reality: " + str(expectation*100) + " % Sample: " + str(idx) + " / " + str(len(data)-INPUT_DATA_RANGE)
         predictions.remove((prediction_worker,expectation,idx))
 
     pool.close()
