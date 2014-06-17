@@ -1,5 +1,5 @@
-INPUT = 10
-HIDDEN = 40
+INPUT = 5
+HIDDEN = 20
 OUTPUT = 1
 
 INPUT_DATA_RANGE = 30
@@ -31,7 +31,7 @@ def train(data):
         input_data = tuple([data[idx + i] for i in range(INPUT)])
 
         try:
-            output_data = (-1) if data[idx + INPUT] <= 0 else (1) # Instead of actual value just a positive or negative
+            output_data = data[idx + INPUT]
         except IndexError:
             break
 
