@@ -1,3 +1,33 @@
+class Parser(object):
+    """ Parses xls file """
+
+    def __init__(self,file_path):
+        self._file_path = file_path
+
+    def getColumn(self,idx,sheet=0):
+        """ Returns list of items in column """
+        import xlrd
+
+        excel_file = xlrd.open_workbook(self._file_path)
+        first_sheet = excel_file.sheets()[sheet]
+
+        return map(lambda cell: cell.value,first_sheet.col(idx))
+
+class Trainer(object):
+    """ Neural Network Trainer """
+
+    def __init__(self,net):
+        self._net = net
+
+    def train(self,input_data,expected_data):
+        """ Trains Network """
+        from pybrain.supervised.trainers import BackpropTrainer
+        from pybrain.datasets import SupervisedDataSet
+
+
+
+##################################################################################
+
 INPUT = 15
 HIDDEN = 30
 OUTPUT = 1
