@@ -1,3 +1,6 @@
+class TrainerException(Exception): pass
+class ParserException(Exception): pass
+
 class Parser(object):
     """ Parses xls file """
 
@@ -22,7 +25,27 @@ class Trainer(object):
     def train(self,input_data,expected_data):
         """ Trains Network """
         from pybrain.supervised.trainers import BackpropTrainer
+
+        self._check_input_data(input_data,expected_data)
+
+        training_data = self._build_dataset(input_data,expected_data)
+        BackpropTrainer(self._net,training_data).trainUntilConvergence()
+
+    def _build_dataset(self,input_data,expected_data):
         from pybrain.datasets import SupervisedDataSet
+
+        data_set = SupervisedDataSet(len(input_data[0]),len(expected_data[0]))
+        for idx,data in enumerate(input_data):
+            data_set.addSample(input_data[idx],expected_data[idx])
+
+        return data_set
+
+    def _check_input_data(self,input_data,expected_data):
+        if len(input_data) != len(expected_data) or len(input_data) == 0:
+            raise TrainerException("Wrong data size!")
+
+class NetFactory(object):
+    """ Neural Network Factory """
 
 
 

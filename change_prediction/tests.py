@@ -19,7 +19,26 @@ class test_Trainer(unittest.TestCase):
         self.t = predict.Trainer(Net())
 
     def test_train(self):
-        self.t.train([()],[()])
+        #self.t.train([(),()],[(),()])
+        pass
+        # TODO
+
+    def test_check_input_data(self):
+        import predict
+
+        with self.assertRaises(predict.TrainerException):
+            self.t._check_input_data([()],[(),()])
+
+        with self.assertRaises(predict.TrainerException):
+            self.t._check_input_data([],[])
+
+    def test_build_dataset(self):
+        self.t._build_dataset([(),()],[(),()])
+
+class test_NetFactory(unittest.TestCase):
+    def test_setUp(self):
+        import predict
+        self.n = predict.NetFactory()
 
 if __name__ == "__main__":
     unittest.main()
