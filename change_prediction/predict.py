@@ -1,5 +1,27 @@
 class TrainerException(Exception): pass
 class ParserException(Exception): pass
+class DataFactoryException(Exception): pass
+
+class Logger(object):
+    """ Logs data to a file """
+    def __init__(self):
+        import os
+        import datetime
+
+        if not os.path.isdir("log"):
+            os.makedirs("log")
+
+        log_name = datetime.datetime.now().strftime("%Y-%m-%d_%H%M.log")
+        self.path = os.path.join("log",log_name)
+
+    def log(self,text,file_print=True,console_print=False):
+        """ Saves text to a file and prints it in console """
+        if file_print:
+            with open(self.path,"a") as fp:
+                fp.write(text + "\n")
+
+        if console_print:
+            print text
 
 class Parser(object):
     """ Parses xls file """
@@ -47,102 +69,101 @@ class Trainer(object):
 class NetFactory(object):
     """ Neural Network Factory """
 
+    def construct(self,data_factory):
+        """ Constructs neural network """
+        input_data,expected_data = data_factory.construct()
 
+        net = self._build_net(input_data,expected_data)
+        self._train_net(net,input_data,expected_data)
 
-##################################################################################
+        return net
 
-INPUT = 15
-HIDDEN = 30
-OUTPUT = 1
+    def _build_net(self,input_data,expected_data):
+        from pybrain.tools.shortcuts import buildNetwork
 
-INPUT_DATA_RANGE = 30
+        input_size = len(input_data[0])
+        output_size = len(expected_data[0])
+        hidden_size = 2 * (input_size + output_size)
 
-def getData():
-    import xlrd
+        return buildNetwork(input_size,hidden_size,output_size)
 
-    excel_file = xlrd.open_workbook("PL9999999987.xls")
-    first_sheet = excel_file.sheets()[0]
+    def _train_net(self,net,input_data,expected_data):
+        Trainer(net).train(input_data,expected_data)
 
-    data = []
-    for cell in first_sheet.col(9):
-        try:
-            data_float = float(cell.value)/100.0
-        except ValueError:
-            pass
-        else:
-            data.append(data_float)
+class DataFactory(object):
+    """ Abstract class for traning data factory """
 
-    return data
+    def construct(self):
+        """ Constructs traning data """
+        raise DataFactoryException("Override this function!")
 
-def train(data):
-    from pybrain.tools.shortcuts import buildNetwork
-    from pybrain.supervised.trainers import BackpropTrainer
-    from pybrain.datasets import SupervisedDataSet
+################################################################################
+################################################################################
+################################################################################
+################################################################################
 
-    data_set = SupervisedDataSet(INPUT,OUTPUT)
-    for idx in range(len(data)):
-        input_data = tuple([data[idx + i] for i in range(INPUT)])
+class ChangeRateDataFactory(DataFactory):
+    """ Factory class for change rate data """
 
-        try:
-            output_data = data[idx + INPUT]
-        except IndexError:
-            break
+    def construct(self,data,data_range):
+        data = self._convert_data_to_float(data)
+        return self._group_data(data,data_range)
 
-        data_set.addSample(input_data,output_data)
+    def _convert_data_to_float(self,data):
+        return map(lambda value: float(value)/100.0,data)
 
-    net = buildNetwork(INPUT,HIDDEN,OUTPUT)
-    trainer = BackpropTrainer(net,data_set)
-    trainer.trainUntilConvergence()
+    def _group_data(self,data,data_range):
+        input_data = []
+        excepted_data = []
+        for idx in range(len(data)):
+            input_data.append(tuple([data[idx + i] for i in range(data_range)]))
+            try:
+                excepted_data.append(tuple(data[idx + data_range]))
+            except IndexError:
+                break
 
-    return net
+        return input_data,excepted_data
 
-def day_prediction(data):
-    net = train(data)
-    return net.activate(data[-INPUT:])[0]
+def predict(change_rate_data,volume_data):
+    return 0.0,0.0
+
 
 if __name__ == "__main__":
-    import datetime
-    import os
     import multiprocessing
 
-    if not os.path.isdir("log"):
-        os.makedirs("log")
-    log_name = datetime.datetime.now().strftime("%Y-%m-%d_%H%M.log")
-    log_path = os.path.join("log",log_name)
+    DATA_RANGE = 15
+    MAX_DATA_RANGE = 30
 
-    start_time = datetime.datetime.now()
-    print start_time
+    logger = Logger()
 
-    data = getData()
+    change_rate_data = Parser("PLKGHM000017.xls").getColumn(9)
+    volume_data = Parser("PLKGHM000017.xls").getColumn(10)
+
+    change_rate_data.pop(0)
+    volume_data.pop(0)
 
     pool = multiprocessing.Pool()
 
     predictions = []
-    for idx in range(len(data)):
-        input_data = [data[idx + i] for i in range(INPUT_DATA_RANGE)]
+    for idx in range(len(change_rate_data)):
+        change_rate_sample = [change_rate_data[idx + i] for i in range(MAX_DATA_RANGE)]
+        volume_sample = [volume_data[idx + i] for i in range(MAX_DATA_RANGE)]
 
         try:
-            expectation = data[idx + INPUT_DATA_RANGE]
+            change_rate_expectation = change_rate_data[idx + MAX_DATA_RANGE]
+            volume_data_expectation = volume_data[idx + MAX_DATA_RANGE]
         except IndexError:
             break
 
-        print "Adding task: " + str(idx)
-        predictions.append((pool.apply_async(day_prediction,(input_data,)),expectation,idx))
+        logger.log("Adding task: " + str(idx),False,True)
+        predictions.append((pool.apply_async(predict,(change_rate_sample,volume_sample)),change_rate_expectation,volume_data_expectation,idx))
 
-    print "Waiting..."
+    logger.log("Waiting...",False,True)
 
-    for prediction_worker,expectation,idx in predictions[:]:
-        prediction = prediction_worker.get()
-        with open(log_path,"a") as fp:
-            fp.write(str('{0:.2f}'.format(prediction*100)) + ";" + str(expectation*100) + "\n")
-
-        print "Prediction: " + str('{0:.2f}'.format(prediction*100)) + " % Reality: " + str(expectation*100) + " % Sample: " + str(idx) + " / " + str(len(data)-INPUT_DATA_RANGE)
-        predictions.remove((prediction_worker,expectation,idx))
+    for prediction_worker,change_rate_expectation,volume_data_expectation,idx in predictions:
+        change_rate_prediction,volume_data_prediction = prediction_worker.get()
+        logger.log(str('{0:.2f}'.format(change_rate_prediction*100)) + ";" + str(change_rate_expectation*100),True,False)
+        logger.log("Prediction: " + str('{0:.2f}'.format(change_rate_prediction*100)) + " % Reality: " + str(change_rate_expectation*100) + " % Sample: " + str(idx) + " / " + str(len(change_rate_data) - MAX_DATA_RANGE),False,True)
 
     pool.close()
     pool.join()
-
-    end_time = datetime.datetime.now()
-    print end_time
-
-    print "Calculation took:    " + str((end_time - start_time).total_seconds()/60) + " Min"

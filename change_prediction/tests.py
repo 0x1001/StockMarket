@@ -1,8 +1,12 @@
 import unittest
+import predict
 
-class test_parser(unittest.TestCase):
+class CustomData(predict.DataFactory):
+    def construct(self):
+        return [(1,0),(0,1),(0,0),(1,1)],[(1,),(1,),(0,),(0,)]
+
+class test_Parser(unittest.TestCase):
     def setUp(self):
-        import predict
         self.p = predict.Parser("test_file.xls")
 
     def test_getColumn(self):
@@ -10,22 +14,28 @@ class test_parser(unittest.TestCase):
         self.assertIsInstance(column,list)
         self.assertEqual(column[0],u"Nazwa")
 
+class test_Logger(unittest.TestCase):
+    def setUp(self):
+        self.l = predict.Logger()
+
+    def test_log(self):
+        self.l.log("text")
+
+    def tearDown(self):
+        import os
+        try:
+            os.unlink(self.l.path)
+        except OSError:
+            pass
+
 class test_Trainer(unittest.TestCase):
     def setUp(self):
-        import predict
-
-        class Net(): pass
-
-        self.t = predict.Trainer(Net())
+        self.t = predict.Trainer(predict.NetFactory().construct(CustomData()))
 
     def test_train(self):
-        #self.t.train([(),()],[(),()])
-        pass
-        # TODO
+        self.t.train([(1,0),(0,1)],[(1,),(0,)])
 
     def test_check_input_data(self):
-        import predict
-
         with self.assertRaises(predict.TrainerException):
             self.t._check_input_data([()],[(),()])
 
@@ -36,9 +46,23 @@ class test_Trainer(unittest.TestCase):
         self.t._build_dataset([(),()],[(),()])
 
 class test_NetFactory(unittest.TestCase):
-    def test_setUp(self):
-        import predict
+    def setUp(self):
         self.n = predict.NetFactory()
+        self.data_factory = CustomData()
+
+    def test_construct(self):
+        self.assertIsNotNone(self.n.construct(self.data_factory))
+
+    def test_build_net(self):
+        net = self.n._build_net([(),()],[(),()])
+
+class test_DataFactory(unittest.TestCase):
+    def setUp(self):
+        self.d = predict.DataFactory()
+
+    def test_construct(self):
+        with self.assertRaises(predict.DataFactoryException):
+            self.d.construct()
 
 if __name__ == "__main__":
     unittest.main()
