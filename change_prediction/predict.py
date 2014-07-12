@@ -104,28 +104,100 @@ class DataFactory(object):
 
 class ChangeRateDataFactory(DataFactory):
     """ Factory class for change rate data """
+    def __init__(self,change_rate_data,data_range):
+        self._data_range = data_range
+        self._change_rate_data = change_rate_data
 
-    def construct(self,data,data_range):
-        data = self._convert_data_to_float(data)
-        return self._group_data(data,data_range)
+    def construct(self):
+        self._change_rate_data = self._convert_data_to_float(self._change_rate_data)
+        return self._group_data()
 
     def _convert_data_to_float(self,data):
         return map(lambda value: float(value)/100.0,data)
 
-    def _group_data(self,data,data_range):
+    def _group_data(self):
         input_data = []
-        excepted_data = []
-        for idx in range(len(data)):
-            input_data.append(tuple([data[idx + i] for i in range(data_range)]))
+        expected_data = []
+        for idx in range(len(self._change_rate_data)):
             try:
-                excepted_data.append(tuple(data[idx + data_range]))
+                expected_data.append(tuple([self._change_rate_data[idx + self._data_range]]))
             except IndexError:
                 break
 
-        return input_data,excepted_data
+            input_data.append(tuple([self._change_rate_data[idx + i] for i in range(self._data_range)]))
 
-def predict(change_rate_data,volume_data):
-    return 0.0,0.0
+        return input_data,expected_data
+
+class VolumeDataFactory(DataFactory):
+    """ Factory class for volume data """
+    def __init__(self,volume_data,data_range):
+        self._data_range = data_range
+        self._volume_data = volume_data
+
+    def construct(self):
+        self._volume_data = self._inverse_data(self._volume_data)
+        return self._group_data()
+
+    def _inverse_data(self,data):
+        return map(lambda value: 1/float(value),data)
+
+    def _group_data(self):
+        input_data = []
+        expected_data = []
+        for idx in range(len(self._volume_data)):
+            try:
+                expected_data.append(tuple([self._volume_data[idx + self._data_range]]))
+            except IndexError:
+                break
+
+            input_data.append(tuple([self._volume_data[idx + i] for i in range(self._data_range)]))
+
+        return input_data,expected_data
+
+class CombinedDataFactory(DataFactory):
+    """ Factory class for combined change rate and volume data """
+    def __init__(self,change_rate_data,volume_data):
+        self._change_rate_data = change_rate_data
+        self._volume_data = volume_data
+
+    def construct(self):
+        self._volume_data = self._inverse_data(self._volume_data)
+        self._change_rate_data = self._convert_data_to_float(self._change_rate_data)
+        return self._group_data()
+
+    def _inverse_data(self,data):
+        return map(lambda value: 1/float(value),data)
+
+    def _convert_data_to_float(self,data):
+        return map(lambda value: float(value)/100.0,data)
+
+    def _group_data(self):
+        input_data = []
+        expected_data = []
+        for idx in range(len(self._change_rate_data)):
+            try:
+                if self._change_rate_data[idx + 1] >= 0:
+                    expected_data.append(tuple([1]))
+                else:
+                    expected_data.append(tuple([-1]))
+            except IndexError:
+                break
+
+            input_data.append((self._change_rate_data[idx],self._volume_data[idx]))
+
+        return input_data,expected_data
+
+def predict(change_rate_data,volume_data,data_range):
+    change_rate_net = NetFactory().construct(ChangeRateDataFactory(change_rate_data,data_range))
+    volume_net = NetFactory().construct(VolumeDataFactory(volume_data,data_range))
+    combined_net = NetFactory().construct(CombinedDataFactory(change_rate_data,volume_data))
+
+    change_rate_prediction = change_rate_net.activate(change_rate_data[-data_range:])
+    volume_prediction = volume_net.activate(volume_data[-data_range:])
+
+    combined_prediction = combined_net.activate((change_rate_prediction,volume_prediction))
+
+    return combined_prediction
 
 
 if __name__ == "__main__":
@@ -150,20 +222,22 @@ if __name__ == "__main__":
         volume_sample = [volume_data[idx + i] for i in range(MAX_DATA_RANGE)]
 
         try:
-            change_rate_expectation = change_rate_data[idx + MAX_DATA_RANGE]
-            volume_data_expectation = volume_data[idx + MAX_DATA_RANGE]
+            if change_rate_data[idx + MAX_DATA_RANGE] >= 0:
+                expectation = 1
+            else:
+                expectation = -1
         except IndexError:
             break
 
         logger.log("Adding task: " + str(idx),False,True)
-        predictions.append((pool.apply_async(predict,(change_rate_sample,volume_sample)),change_rate_expectation,volume_data_expectation,idx))
+        predictions.append((pool.apply_async(predict,(change_rate_sample,volume_sample,DATA_RANGE)),expectation,idx))
 
     logger.log("Waiting...",False,True)
 
-    for prediction_worker,change_rate_expectation,volume_data_expectation,idx in predictions:
-        change_rate_prediction,volume_data_prediction = prediction_worker.get()
-        logger.log(str('{0:.2f}'.format(change_rate_prediction*100)) + ";" + str(change_rate_expectation*100),True,False)
-        logger.log("Prediction: " + str('{0:.2f}'.format(change_rate_prediction*100)) + " % Reality: " + str(change_rate_expectation*100) + " % Sample: " + str(idx) + " / " + str(len(change_rate_data) - MAX_DATA_RANGE),False,True)
+    for prediction_worker,expectation,idx in predictions:
+        prediction = prediction_worker.get()
+        logger.log(str('{0:.2f}'.format(prediction)) + ";" + str(expectation),True,False)
+        logger.log("Prediction: " + str('{0:.2f}'.format(prediction)) + " % Reality: " + str(expectation) + " % Sample: " + str(idx) + " / " + str(len(change_rate_data) - MAX_DATA_RANGE),False,True)
 
     pool.close()
     pool.join()
