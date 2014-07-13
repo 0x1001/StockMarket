@@ -124,7 +124,7 @@ class ChangeRateDataFactory(DataFactory):
             except IndexError:
                 break
 
-            input_data.append(tuple([self._change_rate_data[idx + i] for i in range(self._data_range)]))
+            input_data.append(tuple(self._change_rate_data[idx:idx + self._data_range]))
 
         return input_data,expected_data
 
@@ -150,7 +150,7 @@ class VolumeDataFactory(DataFactory):
             except IndexError:
                 break
 
-            input_data.append(tuple([self._volume_data[idx + i] for i in range(self._data_range)]))
+            input_data.append(tuple(self._volume_data[idx:idx + self._data_range]))
 
         return input_data,expected_data
 
@@ -217,8 +217,8 @@ if __name__ == "__main__":
 
     predictions = []
     for idx in range(len(change_rate_data)):
-        change_rate_sample = [change_rate_data[idx + i] for i in range(MAX_DATA_RANGE)]
-        volume_sample = [volume_data[idx + i] for i in range(MAX_DATA_RANGE)]
+        change_rate_sample = change_rate_data[idx:idx+MAX_DATA_RANGE]
+        volume_sample = volume_data[idx:idx+MAX_DATA_RANGE]
 
         try:
             if change_rate_data[idx + MAX_DATA_RANGE] >= 0:
