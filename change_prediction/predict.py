@@ -197,8 +197,7 @@ def predict(change_rate_data,volume_data,data_range):
 
     combined_prediction = combined_net.activate((change_rate_prediction,volume_prediction))
 
-    return combined_prediction
-
+    return combined_prediction[0]
 
 if __name__ == "__main__":
     import multiprocessing
@@ -236,8 +235,8 @@ if __name__ == "__main__":
 
     for prediction_worker,expectation,idx in predictions:
         prediction = prediction_worker.get()
-        logger.log(str('{0:.2f}'.format(prediction)) + ";" + str(expectation),True,False)
-        logger.log("Prediction: " + str('{0:.2f}'.format(prediction)) + " % Reality: " + str(expectation) + " % Sample: " + str(idx) + " / " + str(len(change_rate_data) - MAX_DATA_RANGE),False,True)
+        logger.log(str(prediction) + ";" + str(expectation),True,False)
+        logger.log("Prediction: " + str(prediction) + " % Reality: " + str(expectation) + " % Sample: " + str(idx) + " / " + str(len(change_rate_data) - MAX_DATA_RANGE),False,True)
 
     pool.close()
     pool.join()
