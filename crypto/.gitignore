@@ -1,4 +1,6 @@
-keys.txt
+poloniex_keys.txt
+pushover_keys.txt
+mqtt_config.txt
 .idea
 .venv
 __pyc__

@@ -193,7 +193,7 @@ def what_to_sell():
         if not found[currency_pair]:
             found[currency_pair] = find_evening_star(data)
 
-    display_predictions(found, "Good to sell:")
+    return found
 
 
 def what_to_buy():
@@ -209,10 +209,10 @@ def what_to_buy():
         if not found[currency_pair]:
             found[currency_pair] = find_abandoned_baby(data)
     
-    display_predictions(found, "Good to buy:")
+    return found
 
 
-def show_balance():
+def get_balance():
     api_key, secret = get_key()
 
     polo = poloniex.Poloniex(api_key, secret)
@@ -234,19 +234,17 @@ def show_balance():
         coins_sorted.append(new_coin)
 
     coins_sorted.sort(key=lambda k: k['btcValue'], reverse=True)
-
-    display_balance(coins_sorted)
-    plot_balance(coins_sorted)
+    return coins_sorted
 
 
-def show_open_orders():
+def get_open_orders():
     api_key, secret = get_key()
 
     polo = poloniex.Poloniex(api_key, secret)
     data = polo.returnOpenOrders()
     data = filter_open_orders(data)
 
-    display_open_orders(data)
+    return data
 
 
 def filter_open_orders(data):
@@ -320,12 +318,12 @@ def display_predictions(found, prefix):
 
 
 def get_key():
-    if not os.path.isfile("keys.txt"):
-        raise Exception("File keys.txt does not exists. "
+    if not os.path.isfile("poloniex_keys.txt"):
+        raise Exception("File poloniex_keys.txt does not exists. "
                         "It should contain in first line your api key and in second line your secret key."
                         "You can generate Poloniex keys in API Keys menu once you log in.")
 
-    with open("keys.txt") as fp:
+    with open("poloniex_keys.txt") as fp:
         api_key = fp.readline().strip()
         secret = fp.readline().strip()
 
@@ -340,19 +338,23 @@ if __name__ == "__main__":
     parser.add_argument('-s', dest='sell', action='store_true', help='Tells what to sell according to candelstick analysis.')
     parser.add_argument('-b', dest='buy', action='store_true', help='Tells what to buy according to candelstick analysis')
     parser.add_argument('-ab', dest='balance', action='store_true', help='Tells account balance.')
+    parser.add_argument('-abg', dest='balance_with_graph', action='store_true', help='Tells account balance on the pie chart.')
     parser.add_argument('-oo', dest='open_orders', action='store_true', help='Tells open orders.')
 
     args = parser.parse_args()
 
     if args.sell:
-        what_to_sell()
+        display_predictions(what_to_sell(), "Good to sell:")
 
     if args.buy:
-        what_to_buy()
+        display_predictions(what_to_buy(), "Good to buy:")
 
     if args.balance:
-        show_balance()
+        display_balance(get_balance())
+
+    if args.balance_with_graph:
+        plot_balance(get_balance())
 
     if args.open_orders:
-        show_open_orders()
+        display_open_orders(get_open_orders())
 
