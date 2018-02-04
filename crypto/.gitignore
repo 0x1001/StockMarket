@@ -4,3 +4,4 @@ mqtt_config.txt
 .idea
 .venv
 __pyc__
+_*.png

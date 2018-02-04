@@ -4,6 +4,41 @@ import time
 import datetime
 import argparse
 import matplotlib.pyplot as plt
+from matplotlib.finance import candlestick2_ochl
+
+
+def get_chart_data(currency_pair):
+    polo = poloniex.Poloniex()
+    data = polo.returnChartData(currency_pair, 300, start=(time.time() - polo.YEAR), end=time.time())
+    return data
+
+
+def plot_chart_data(data, currency_pair, file_name=None, ymin=None, ymax=None):
+    fig1, ax1 = plt.subplots()
+    candlestick2_ochl(ax1,
+                      opens=[float(d["open"]) for d in data],
+                      closes=[float(d["close"]) for d in data],
+                      highs=[float(d["high"]) for d in data],
+                      lows=[float(d["low"]) for d in data],
+                      width=0.5,
+                      colorup='green')
+
+    open = float(data[0]['open'])
+    close = float(data[-1]['close'])
+
+    change = (close - open)/open * 100
+
+    plt.title("{0} {1:.2f}%".format(currency_pair, change))
+
+    if ymin and ymax:
+        plt.ylim(ymin=ymin, ymax=ymax)
+
+    plt.tight_layout()
+    if file_name:
+        plt.savefig(file_name)
+        plt.close()
+    else:
+        plt.show()
 
 
 def find_tree_line_strike(data):
