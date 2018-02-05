@@ -1,18 +1,24 @@
+import argparse
+
 import exchange
 import random
 from tkinter import *
 import PIL.Image
 import PIL.ImageTk
+import pickle
+import os
 
 
 TEMP_FILE_BEFORE = "_before_temp.png"
 TEMP_FILE_AFTER = "_after_temp.png"
+TRAINING_DB_FILE = "training_data_db.pkl"
 
 
 class TrainingData:
-    data = {}
-    feedback = ""  # "buy", "sell", "hold"
-    currency_pair = ""  # "USDT_BTC"
+    def __init__(self):
+        self.data = []
+        self.feedback = ""  # "buy", "sell", "hold"
+        self.currency_pair = ""  # "USDT_BTC"
 
 
 def ask():
@@ -33,7 +39,11 @@ def ask():
 
         answer = _gui_question()
         if answer:
-            pass
+            td = TrainingData()
+            td.data = slice
+            td.feedback = answer
+            td.currency_pair = currency_pair
+            _save(td)
         else:
             break
 
@@ -41,24 +51,24 @@ def ask():
 def _gui_question():
     root = Tk()
 
-    class _answer:
+    class _Answer:
         def __init__(self, root):
-            self.ansswer = None
+            self.answer = None
             self.root = root
 
         def buy_callback(self):
-            self.ansswer = "buy"
+            self.answer = "buy"
             self.root.destroy()
 
         def sell_callback(self):
-            self.ansswer = "sell"
+            self.answer = "sell"
             self.root.destroy()
 
         def hold_collback(self):
-            self.ansswer = "hold"
+            self.answer = "hold"
             self.root.destroy()
 
-    answer = _answer(root)
+    answer = _Answer(root)
 
     w = Label(root, text="Choose between: Buy, Sell, Hold")
     w.pack()
@@ -87,4 +97,32 @@ def _gui_question():
     root.geometry('%dx%d+%d+%d' % (1400, 570, 400, 300))
     root.mainloop()
 
-    return answer.ansswer
+    return answer.answer
+
+
+def _save(data):
+    if not os.path.isfile(TRAINING_DB_FILE):
+        all_data = []
+    else:
+        with open(TRAINING_DB_FILE, "rb") as fp:
+            all_data = pickle.load(fp)
+
+    all_data.append(data)
+
+    with open(TRAINING_DB_FILE, "wb") as fp:
+        pickle.dump(all_data, fp)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Training data generator.')
+    parser.add_argument('-r', dest='remove', action='store_true', help='Remove existing training database.')
+    parser.add_argument('-g', dest='generate', action='store_true', help='Generate training data.')
+
+    args = parser.parse_args()
+
+    if args.remove:
+        if os.path.isfile(TRAINING_DB_FILE):
+            os.unlink(TRAINING_DB_FILE)
+
+    if args.generate:
+        ask()
