@@ -12,7 +12,8 @@ import helper
 TEMP_FILE_BEFORE = "_before_temp.png"
 TEMP_FILE_AFTER = "_after_temp.png"
 TRAINING_DB_FILE = "training_data_db.pkl"
-RANGE = 10
+RANGE = 4
+RANGE_AFTER = 10
 
 
 class TrainingData:
@@ -27,9 +28,9 @@ def ask():
 
     data = exchange.get_chart_data(currency_pair)
     while True:
-        start = random.randint(0, len(data) - 2 * RANGE - 1)
+        start = random.randint(0, len(data) - (RANGE + RANGE_AFTER) - 1)
         slice = data[start : start + RANGE]
-        slice_after = data[start + RANGE : start + 2 * RANGE]
+        slice_after = data[start + RANGE : start + (RANGE + RANGE_AFTER)]
 
         ymin = min([float(d["low"]) for d in slice + slice_after])
         ymax = max(([float(d["high"]) for d in slice + slice_after]))
@@ -105,11 +106,11 @@ def generate_automatic():
 
     data = exchange.get_chart_data(currency_pair)
 
-    total = len(data) - 2*RANGE
+    total = len(data) - (RANGE + RANGE_AFTER)
     feedback = []
-    for start in range(len(data) - 2*RANGE):
+    for start in range(len(data) - (RANGE + RANGE_AFTER)):
         open = float(data[start + RANGE]["open"])
-        close = float(data[start + 2 * RANGE - 1]["close"])
+        close = float(data[start + (RANGE + RANGE_AFTER) - 1]["close"])
 
         change = helper.calculate_difference_in_percent(open, close)
 

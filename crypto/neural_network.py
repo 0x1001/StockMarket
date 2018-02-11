@@ -28,7 +28,9 @@ def neural_network_model(data):
     output_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_hl3, n_classes])),
                     'biases': tf.Variable(tf.random_normal([n_classes])), }
 
-    l1 = tf.add(tf.matmul(data, hidden_1_layer['weights']), hidden_1_layer['biases'])
+    data_norm = tf.nn.l2_normalize(data)
+
+    l1 = tf.add(tf.matmul(data_norm, hidden_1_layer['weights']), hidden_1_layer['biases'])
     l1 = tf.nn.relu(l1)
 
     l2 = tf.add(tf.matmul(l1, hidden_2_layer['weights']), hidden_2_layer['biases'])
@@ -66,7 +68,8 @@ def train_neural_network(x):
         correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
 
         accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
-        #print('Accuracy:', accuracy.eval({x: mnist.test.images, y: mnist.test.labels}))
+        test_data, test_feedback = _test_data()
+        print('Accuracy:', accuracy.eval({x: test_data, y: test_feedback}))
 
 
 def next_data(batch_size):
@@ -74,6 +77,8 @@ def next_data(batch_size):
 
     with open(training_data.TRAINING_DB_FILE, "rb") as fp:
         data = pickle.load(fp)[0]
+
+    data = (data[0][:-1000], data[1][:-1000])
 
     x = []
     y = []
@@ -94,16 +99,33 @@ def next_data(batch_size):
             single_data.append(float(single_data_raw[j]["low"]))
             single_data.append(float(single_data_raw[j]["high"]))
 
-        if is_balanced(batch_size, y, data[1][_DATA_IDX]):
-            x.append(single_data)
-            y.append(one_hot_encoding(data[1][_DATA_IDX]))
+        x.append(single_data)
+        y.append(one_hot_encoding(data[1][_DATA_IDX]))
 
         _DATA_IDX += 1
 
 
-def is_balanced(batch_size, y, current):
-    #return len([d for d in y if d == one_hot_encoding(current)]) < batch_size/3
-    return True
+def _test_data():
+    with open(training_data.TRAINING_DB_FILE, "rb") as fp:
+        data = pickle.load(fp)[0]
+
+    data = (data[0][-1000:], data[1][-1000:])
+
+    x = []
+    y = []
+    for i in range(len(data[0]) - training_data.RANGE):
+        single_data = []
+        single_data_raw = data[0][i: i + training_data.RANGE]
+        for j in range(len(single_data_raw)):
+            single_data.append(float(single_data_raw[j]["open"]))
+            single_data.append(float(single_data_raw[j]["close"]))
+            single_data.append(float(single_data_raw[j]["low"]))
+            single_data.append(float(single_data_raw[j]["high"]))
+
+        x.append(single_data)
+        y.append(one_hot_encoding(data[1][i]))
+
+    return x, y
 
 
 def one_hot_encoding(data):
