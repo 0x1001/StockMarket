@@ -1,4 +1,5 @@
-set PYTHON=c:/tools/Python3.5
+REM Python 3.6 64bit is required!
+set PYTHON=c:/tools/Python36
 
 IF EXIST ".venv" (
     rmdir /q /s .venv

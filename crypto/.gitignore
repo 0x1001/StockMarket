@@ -6,3 +6,4 @@ mqtt_config.txt
 __pyc__
 _*.png
 training_data_db.pkl
+tmp

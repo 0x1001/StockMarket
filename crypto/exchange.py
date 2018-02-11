@@ -5,6 +5,7 @@ import datetime
 import argparse
 import matplotlib.pyplot as plt
 from matplotlib.finance import candlestick2_ochl
+import helper
 
 
 def get_chart_data(currency_pair):
@@ -23,10 +24,7 @@ def plot_chart_data(data, currency_pair, file_name=None, ymin=None, ymax=None):
                       width=0.5,
                       colorup='green')
 
-    open = float(data[0]['open'])
-    close = float(data[-1]['close'])
-
-    change = (close - open)/open * 100
+    change = helper.calculate_difference_in_percent(float(data[0]['open']), float(data[-1]['close']))
 
     plt.title("{0} {1:.2f}%".format(currency_pair, change))
 

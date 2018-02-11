@@ -1,5 +1,4 @@
 import argparse
-
 import exchange
 import random
 from tkinter import *
@@ -7,11 +6,13 @@ import PIL.Image
 import PIL.ImageTk
 import pickle
 import os
+import helper
 
 
 TEMP_FILE_BEFORE = "_before_temp.png"
 TEMP_FILE_AFTER = "_after_temp.png"
 TRAINING_DB_FILE = "training_data_db.pkl"
+RANGE = 10
 
 
 class TrainingData:
@@ -22,7 +23,6 @@ class TrainingData:
 
 
 def ask():
-    RANGE = 10
     currency_pair = "USDT_BTC"
 
     data = exchange.get_chart_data(currency_pair)
@@ -100,6 +100,31 @@ def _gui_question():
     return answer.answer
 
 
+def generate_automatic():
+    currency_pair = "USDT_BTC"
+
+    data = exchange.get_chart_data(currency_pair)
+
+    total = len(data) - 2*RANGE
+    feedback = []
+    for start in range(len(data) - 2*RANGE):
+        open = float(data[start + RANGE]["open"])
+        close = float(data[start + 2 * RANGE - 1]["close"])
+
+        change = helper.calculate_difference_in_percent(open, close)
+
+        if change > 1.5:  # if price changed more then 1.5% in data afterwards then it was good moment to buy
+            feedback.append("buy")
+        elif change < -1.5:  # if price change less then -1.5% in data afterwards then it was good moment to sell
+            feedback.append("sell")
+        else:  # if price didn't change much then do nothing
+            feedback.append("hold")
+
+        print("Progress: {0} / {1}".format(start, total))
+
+    _save((data, feedback))
+
+
 def _save(data):
     if not os.path.isfile(TRAINING_DB_FILE):
         all_data = []
@@ -117,6 +142,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Training data generator.')
     parser.add_argument('-r', dest='remove', action='store_true', help='Remove existing training database.')
     parser.add_argument('-g', dest='generate', action='store_true', help='Generate training data.')
+    parser.add_argument('-ag', dest='generate_automatic', action='store_true', help='Generates data automatically')
 
     args = parser.parse_args()
 
@@ -126,3 +152,6 @@ if __name__ == "__main__":
 
     if args.generate:
         ask()
+
+    if args.generate_automatic:
+        generate_automatic()
