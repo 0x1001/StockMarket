@@ -102,28 +102,29 @@ def _gui_question():
 
 
 def generate_automatic():
-    currency_pair = "USDT_BTC"
+    currency_pairs = ["USDT_BTC", "USDT_ETH", "USDT_LTC", "USDT_ZEC", "USDT_ETC", "USDT_REP", "USDT_XMR", "USDT_STR", "USDT_DASH", "USDT_XRP"]
 
-    data = exchange.get_chart_data(currency_pair)
+    for currency_pair in currency_pairs:
+        data = exchange.get_chart_data(currency_pair)
 
-    total = len(data) - (RANGE + RANGE_AFTER)
-    feedback = []
-    for start in range(len(data) - (RANGE + RANGE_AFTER)):
-        open = float(data[start + RANGE]["open"])
-        close = float(data[start + (RANGE + RANGE_AFTER) - 1]["close"])
+        total = len(data) - (RANGE + RANGE_AFTER)
+        feedback = []
+        for start in range(len(data) - (RANGE + RANGE_AFTER)):
+            open = float(data[start + RANGE]["open"])
+            close = float(data[start + (RANGE + RANGE_AFTER) - 1]["close"])
 
-        change = helper.calculate_difference_in_percent(open, close)
+            change = helper.calculate_difference_in_percent(open, close)
 
-        if change > 1.5:  # if price changed more then 1.5% in data afterwards then it was good moment to buy
-            feedback.append("buy")
-        elif change < -1.5:  # if price change less then -1.5% in data afterwards then it was good moment to sell
-            feedback.append("sell")
-        else:  # if price didn't change much then do nothing
-            feedback.append("hold")
+            if change > 1.5:  # if price changed more then 1.5% in data afterwards then it was good moment to buy
+                feedback.append("buy")
+            elif change < -1.5:  # if price change less then -1.5% in data afterwards then it was good moment to sell
+                feedback.append("sell")
+            else:  # if price didn't change much then do nothing
+                feedback.append("hold")
 
-        print("Progress: {0} / {1}".format(start, total))
+            print("Progress {2}: {0} / {1}".format(start, total, currency_pair))
 
-    _save((data, feedback))
+        _save((data, feedback))
 
 
 def _save(data):

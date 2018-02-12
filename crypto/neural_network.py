@@ -73,57 +73,60 @@ def train_neural_network(x):
 
 
 def next_data(batch_size):
-    _DATA_IDX = 0
-
     with open(training_data.TRAINING_DB_FILE, "rb") as fp:
-        data = pickle.load(fp)[0]
+        all_data = pickle.load(fp)
 
-    data = (data[0][:-1000], data[1][:-1000])
+    for data in all_data:
+        _DATA_IDX = 0
+        data = (data[0][:-1000], data[1][:-1000])
 
-    x = []
-    y = []
-    while True:
-        if len(y) == batch_size:
-            yield x, y
-            y = []
-            x = []
+        x = []
+        y = []
+        while True:
+            if len(y) == batch_size:
+                yield x, y
+                y = []
+                x = []
 
-        if _DATA_IDX == len(data[1]):
-            raise StopIteration()
+            if _DATA_IDX == len(data[1]):
+                break
 
-        single_data = []
-        single_data_raw = data[0][_DATA_IDX: _DATA_IDX + training_data.RANGE]
-        for j in range(len(single_data_raw)):
-            single_data.append(float(single_data_raw[j]["open"]))
-            single_data.append(float(single_data_raw[j]["close"]))
-            single_data.append(float(single_data_raw[j]["low"]))
-            single_data.append(float(single_data_raw[j]["high"]))
+            single_data = []
+            single_data_raw = data[0][_DATA_IDX: _DATA_IDX + training_data.RANGE]
+            for j in range(len(single_data_raw)):
+                single_data.append(float(single_data_raw[j]["open"]))
+                single_data.append(float(single_data_raw[j]["close"]))
+                single_data.append(float(single_data_raw[j]["low"]))
+                single_data.append(float(single_data_raw[j]["high"]))
 
-        x.append(single_data)
-        y.append(one_hot_encoding(data[1][_DATA_IDX]))
+            x.append(single_data)
+            y.append(one_hot_encoding(data[1][_DATA_IDX]))
 
-        _DATA_IDX += 1
+            _DATA_IDX += 1
+
+    raise StopIteration
 
 
 def _test_data():
     with open(training_data.TRAINING_DB_FILE, "rb") as fp:
-        data = pickle.load(fp)[0]
-
-    data = (data[0][-1000:], data[1][-1000:])
+        all_data = pickle.load(fp)
 
     x = []
     y = []
-    for i in range(len(data[0]) - training_data.RANGE):
-        single_data = []
-        single_data_raw = data[0][i: i + training_data.RANGE]
-        for j in range(len(single_data_raw)):
-            single_data.append(float(single_data_raw[j]["open"]))
-            single_data.append(float(single_data_raw[j]["close"]))
-            single_data.append(float(single_data_raw[j]["low"]))
-            single_data.append(float(single_data_raw[j]["high"]))
+    for data in all_data:
+        data = (data[0][-1000:], data[1][-1000:])
 
-        x.append(single_data)
-        y.append(one_hot_encoding(data[1][i]))
+        for i in range(len(data[0]) - training_data.RANGE):
+            single_data = []
+            single_data_raw = data[0][i: i + training_data.RANGE]
+            for j in range(len(single_data_raw)):
+                single_data.append(float(single_data_raw[j]["open"]))
+                single_data.append(float(single_data_raw[j]["close"]))
+                single_data.append(float(single_data_raw[j]["low"]))
+                single_data.append(float(single_data_raw[j]["high"]))
+
+            x.append(single_data)
+            y.append(one_hot_encoding(data[1][i]))
 
     return x, y
 
