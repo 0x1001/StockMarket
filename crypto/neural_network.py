@@ -6,8 +6,8 @@ import training_data
 
 
 n_input = 4 * training_data.RANGE
-n_nodes_hl1 = n_input
-n_nodes_hl2 = 500
+n_nodes_hl1 = 50
+n_nodes_hl2 = 50
 n_nodes_hl3 = 500
 n_nodes_hl4 = 500
 
