@@ -6,7 +6,7 @@ import training_data
 
 
 n_input = 4 * training_data.RANGE
-n_nodes_hl1 = 500
+n_nodes_hl1 = n_input
 n_nodes_hl2 = 500
 n_nodes_hl3 = 500
 n_nodes_hl4 = 500
@@ -22,10 +22,7 @@ def neural_network_model(data):
     hidden_1_layer = {'weights': tf.Variable(tf.random_normal([n_input, n_nodes_hl1])),
                       'biases': tf.Variable(tf.random_normal([n_nodes_hl1]))}
 
-    hidden_2_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_hl1, n_nodes_hl2])),
-                      'biases': tf.Variable(tf.random_normal([n_nodes_hl2]))}
-
-    output_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_hl2, n_classes])),
+    output_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_hl1, n_classes])),
                     'biases': tf.Variable(tf.random_normal([n_classes])), }
 
     data_norm = tf.nn.l2_normalize(data)
@@ -33,10 +30,7 @@ def neural_network_model(data):
     l1 = tf.add(tf.matmul(data_norm, hidden_1_layer['weights']), hidden_1_layer['biases'])
     l1 = tf.nn.relu(l1)
 
-    l2 = tf.add(tf.matmul(l1, hidden_2_layer['weights']), hidden_2_layer['biases'])
-    l2 = tf.nn.relu(l2)
-
-    output = tf.matmul(l2, output_layer['weights']) + output_layer['biases']
+    output = tf.matmul(l1, output_layer['weights']) + output_layer['biases']
 
     return output
 
