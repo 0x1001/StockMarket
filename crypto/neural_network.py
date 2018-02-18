@@ -1,6 +1,5 @@
 import pickle
 import tensorflow as tf
-
 import helper
 import training_data
 
@@ -28,10 +27,7 @@ def neural_network_model(data):
     hidden_3_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_hl2, n_nodes_hl3])),
                       'biases': tf.Variable(tf.random_normal([n_nodes_hl3]))}
 
-    hidden_4_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_hl3, n_nodes_hl4])),
-                      'biases': tf.Variable(tf.random_normal([n_nodes_hl4]))}
-
-    output_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_hl4, n_classes])),
+    output_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_hl3, n_classes])),
                     'biases': tf.Variable(tf.random_normal([n_classes])), }
 
     data_norm = tf.nn.l2_normalize(data)
@@ -45,10 +41,7 @@ def neural_network_model(data):
     l3 = tf.add(tf.matmul(l2, hidden_3_layer['weights']), hidden_3_layer['biases'])
     l3 = tf.nn.relu(l3)
 
-    l4 = tf.add(tf.matmul(l3, hidden_4_layer['weights']), hidden_4_layer['biases'])
-    l4 = tf.nn.relu(l4)
-
-    output = tf.matmul(l4, output_layer['weights']) + output_layer['biases']
+    output = tf.matmul(l3, output_layer['weights']) + output_layer['biases']
 
     return output
 
@@ -78,7 +71,7 @@ def train_neural_network(x):
 
         accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
         test_data, test_feedback = _test_data()
-        print('Accuracy:', accuracy.eval({x: test_data, y: test_feedback}))
+        print('Accuracy:', accuracy.eval({x: test_data, y: test_feedback}), "Test samples:", len(test_data))
 
 
 def next_data(batch_size):
@@ -87,7 +80,7 @@ def next_data(batch_size):
 
     for data in all_data:
         data_idx = 0
-        data = data[:-1000]
+        data = data[:-10000]
 
         x = []
         y = []
@@ -137,7 +130,7 @@ def _test_data():
     x = []
     y = []
     for data in all_data:
-        data = data[-1000:]
+        data = data[-10000:]
 
         for i in range(len(data) - (training_data.RANGE + training_data.RANGE_AFTER)):
             single_data = []
@@ -148,8 +141,9 @@ def _test_data():
                 single_data.append(float(single_data_raw[j]["low"]))
                 single_data.append(float(single_data_raw[j]["high"]))
 
-            x.append(single_data)
-            y.append(correct_output(data, i))
+            if correct_output(data, i) == [1, 0, 0] or correct_output(data, i) == [0, 1, 0]:
+                x.append(single_data)
+                y.append(correct_output(data, i))
 
     return x, y
 
