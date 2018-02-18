@@ -12,7 +12,7 @@ import helper
 TEMP_FILE_BEFORE = "_before_temp.png"
 TEMP_FILE_AFTER = "_after_temp.png"
 TRAINING_DB_FILE = "training_data_db.pkl"
-RANGE = 4
+RANGE = 10
 RANGE_AFTER = 10
 
 
