@@ -1,15 +1,14 @@
 import pickle
 import tensorflow as tf
-
+import datetime
 import helper
 import training_data
 
 
 n_input = 4 * training_data.RANGE
-n_nodes_hl1 = 500
-n_nodes_hl2 = 500
-n_nodes_hl3 = 500
-n_nodes_hl4 = 500
+n_nodes_hl1 = 1024
+n_nodes_hl2 = 512
+n_nodes_hl3 = 256
 
 n_classes = 3  # One hot for "buy", "sell", "hold"
 batch_size = 100
@@ -28,10 +27,7 @@ def neural_network_model(data):
     hidden_3_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_hl2, n_nodes_hl3])),
                       'biases': tf.Variable(tf.random_normal([n_nodes_hl3]))}
 
-    hidden_4_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_hl3, n_nodes_hl4])),
-                      'biases': tf.Variable(tf.random_normal([n_nodes_hl4]))}
-
-    output_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_hl4, n_classes])),
+    output_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_hl3, n_classes])),
                     'biases': tf.Variable(tf.random_normal([n_classes])), }
 
     data_norm = tf.nn.l2_normalize(data)
@@ -45,10 +41,7 @@ def neural_network_model(data):
     l3 = tf.add(tf.matmul(l2, hidden_3_layer['weights']), hidden_3_layer['biases'])
     l3 = tf.nn.relu(l3)
 
-    l4 = tf.add(tf.matmul(l3, hidden_4_layer['weights']), hidden_4_layer['biases'])
-    l4 = tf.nn.relu(l4)
-
-    output = tf.matmul(l4, output_layer['weights']) + output_layer['biases']
+    output = tf.matmul(l3, output_layer['weights']) + output_layer['biases']
 
     return output
 
@@ -164,4 +157,6 @@ def one_hot_encoding(data):
 
 
 if __name__ == "__main__":
+    start = datetime.datetime.now()
     train_neural_network(x)
+    print("Total time:", (datetime.datetime.now() - start).total_seconds())
