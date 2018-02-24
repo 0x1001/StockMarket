@@ -1,14 +1,12 @@
-import pickle
 import tensorflow as tf
 import datetime
-import helper
-import training_data
+import generate_training_data
 
 
-n_input = 4 * training_data.RANGE
-n_nodes_hl1 = 1024
-n_nodes_hl2 = 512
-n_nodes_hl3 = 256
+n_input = 4 * generate_training_data.RANGE
+n_nodes_hl1 = 128
+n_nodes_hl2 = 64
+n_nodes_hl3 = 32
 
 n_classes = 3  # One hot for "buy", "sell", "hold"
 batch_size = 100
@@ -52,13 +50,13 @@ def train_neural_network(x):
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=y))
     optimizer = tf.train.AdamOptimizer().minimize(cost)
 
-    hm_epochs = 8
+    hm_epochs = 15
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
 
         for epoch in range(hm_epochs):
             epoch_loss = 0
-            batch = next_data(batch_size)
+            batch = batch_data(batch_size)
             total_data_samples = 0
             for epoch_x, epoch_y in batch:
                 _, c = sess.run([optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})
@@ -70,90 +68,49 @@ def train_neural_network(x):
         correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
 
         accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
-        test_data, test_feedback = _test_data()
-        print('Accuracy:', accuracy.eval({x: test_data, y: test_feedback}))
+        test_samples, test_feedback = test_data()
+        print('Accuracy:', accuracy.eval({x: test_samples, y: test_feedback}))
 
 
-def next_data(batch_size):
-    with open(training_data.TRAINING_DB_FILE, "rb") as fp:
-        all_data = pickle.load(fp)[0]
+def batch_data(batch_size):
+    with open(generate_training_data.TRAINING_DB_FILE, "r", buffering=10000) as fp:
+        while True:
+            y = []
+            x = []
+            for _ in range(batch_size):
+                line = fp.readline()
+                if line != "":
+                    stimuli_data, expected_data = _read_data(line)
+                    x.append(stimuli_data)
+                    y.append(expected_data)
+                else:
+                    if x and y:
+                        yield x, y
+                    raise StopIteration
 
-    for data in all_data:
-        data_idx = 0
-        data = data[:-1000]
+            yield x, y
+
+
+def _read_data(line):
+    data = [float(d) for d in line.split(";")]
+    stimuli_data = data[:-n_classes]
+    expected_data = data[-n_classes:]
+    return stimuli_data, expected_data
+
+
+def test_data():
+    with open(generate_training_data.TEST_DB_FILE, "r") as fp:
+        data = fp.readlines()
 
         x = []
         y = []
-        while True:
-            if len(y) == batch_size:
-                yield x, y
-                y = []
-                x = []
+        for line in data:
+            if line != "":
+                stimuli_data, expected_data = _read_data(line)
+                x.append(stimuli_data)
+                y.append(expected_data)
 
-            if data_idx == len(data) - (training_data.RANGE + training_data.RANGE_AFTER):
-                break
-
-            single_data = []
-            single_data_raw = data[data_idx: data_idx + training_data.RANGE]
-            for j in range(len(single_data_raw)):
-                single_data.append(float(single_data_raw[j]["open"]))
-                single_data.append(float(single_data_raw[j]["close"]))
-                single_data.append(float(single_data_raw[j]["low"]))
-                single_data.append(float(single_data_raw[j]["high"]))
-
-            x.append(single_data)
-            y.append(correct_output(data, data_idx))
-
-            data_idx += 1
-
-    raise StopIteration
-
-
-def correct_output(data, idx):
-    open = float(data[idx + training_data.RANGE]["open"])
-    close = float(data[idx + (training_data.RANGE + training_data.RANGE_AFTER) - 1]["close"])
-
-    change = helper.calculate_difference_in_percent(open, close)
-
-    if change > 1.5:  # if price changed more then 1.5% in data afterwards then it was good moment to buy
-        return one_hot_encoding("buy")
-    elif change < -1.5:  # if price change less then -1.5% in data afterwards then it was good moment to sell
-        return one_hot_encoding("sell")
-    else:  # if price didn't change much then do nothing
-        return one_hot_encoding("hold")
-
-
-def _test_data():
-    with open(training_data.TRAINING_DB_FILE, "rb") as fp:
-        all_data = pickle.load(fp)[0]
-
-    x = []
-    y = []
-    for data in all_data:
-        data = data[-1000:]
-
-        for i in range(len(data) - (training_data.RANGE + training_data.RANGE_AFTER)):
-            single_data = []
-            single_data_raw = data[i: i + training_data.RANGE]
-            for j in range(len(single_data_raw)):
-                single_data.append(float(single_data_raw[j]["open"]))
-                single_data.append(float(single_data_raw[j]["close"]))
-                single_data.append(float(single_data_raw[j]["low"]))
-                single_data.append(float(single_data_raw[j]["high"]))
-
-            x.append(single_data)
-            y.append(correct_output(data, i))
-
-    return x, y
-
-
-def one_hot_encoding(data):
-    if data == "buy":
-        return [1, 0, 0]
-    elif data == "sell":
-        return [0, 1, 0]
-    elif data == "hold":
-        return [0, 0, 1]
+        return x, y
 
 
 if __name__ == "__main__":
