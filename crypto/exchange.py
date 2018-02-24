@@ -10,7 +10,7 @@ import helper
 
 def get_chart_data(currency_pair):
     polo = poloniex.Poloniex()
-    data = polo.returnChartData(currency_pair, 300, start=(time.time() - 3*polo.YEAR), end=time.time())
+    data = polo.returnChartData(currency_pair, 300, start=(time.time() - 4*polo.YEAR), end=time.time())
     return data
 
 
