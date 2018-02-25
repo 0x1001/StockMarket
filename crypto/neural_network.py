@@ -3,10 +3,10 @@ import datetime
 import generate_training_data
 
 
-n_input = 4 * generate_training_data.RANGE
-n_nodes_hl1 = 128
-n_nodes_hl2 = 64
-n_nodes_hl3 = 32
+n_input = 10 * generate_training_data.RANGE
+n_nodes_hl1 = 64
+n_nodes_hl2 = 32
+n_nodes_hl3 = 16
 
 n_classes = 3  # One hot for "buy", "sell", "hold"
 batch_size = 100
@@ -28,9 +28,9 @@ def neural_network_model(data):
     output_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_hl3, n_classes])),
                     'biases': tf.Variable(tf.random_normal([n_classes])), }
 
-    data_norm = tf.nn.l2_normalize(data)
+    #data_norm = tf.nn.l2_normalize(data)
 
-    l1 = tf.add(tf.matmul(data_norm, hidden_1_layer['weights']), hidden_1_layer['biases'])
+    l1 = tf.add(tf.matmul(data, hidden_1_layer['weights']), hidden_1_layer['biases'])
     l1 = tf.nn.relu(l1)
 
     l2 = tf.add(tf.matmul(l1, hidden_2_layer['weights']), hidden_2_layer['biases'])
@@ -50,7 +50,7 @@ def train_neural_network(x):
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=y))
     optimizer = tf.train.AdamOptimizer().minimize(cost)
 
-    hm_epochs = 15
+    hm_epochs = 8
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
 
@@ -73,7 +73,7 @@ def train_neural_network(x):
 
 
 def batch_data(batch_size):
-    with open(generate_training_data.TRAINING_DB_FILE, "r", buffering=10000) as fp:
+    with open(generate_training_data.TRAINING_DB_FILE, "r", buffering=100000) as fp:
         while True:
             y = []
             x = []
@@ -104,13 +104,25 @@ def test_data():
 
         x = []
         y = []
+        hold_x = []
+        hold_y = []
         for line in data:
             if line != "":
                 stimuli_data, expected_data = _read_data(line)
-                x.append(stimuli_data)
-                y.append(expected_data)
+                if expected_data == [0.0, 0.0, 1.0]:
+                    hold_x.append(stimuli_data)
+                    hold_y.append(expected_data)
+                else:
+                    x.append(stimuli_data)
+                    y.append(expected_data)
 
-        return x, y
+        hold_x = hold_x[:int(len(x)/2)]
+        hold_y = hold_y[:int(len(x)/2)]
+
+        print("len(hold_x)", len(hold_x))
+        print("len(x)", len(x))
+
+        return x + hold_x, y + hold_y
 
 
 if __name__ == "__main__":

@@ -5,17 +5,19 @@ import helper
 
 TRAINING_DB_FILE = "training_data_db.csv"
 TEST_DB_FILE = "test_data_db.csv"
-RANGE = 10
+RANGE = 5
 RANGE_AFTER = 10
 
-TRAIN_DATA_SIZE = 3000000
-TEST_DATA_SIZE = round(TRAIN_DATA_SIZE * 0.05)
+TRAIN_DATA_SIZE = 10000000
+TEST_DATA_SIZE = round(TRAIN_DATA_SIZE * 0.01)
 
-CURRENCY_PAIRS = ["USDT_BTC", "USDT_ETH", "USDT_LTC", "USDT_ZEC", "USDT_ETC", "USDT_REP", "USDT_XMR", "USDT_STR", "USDT_DASH", "USDT_XRP", "USDT_BCH", "USDT_NXT"]
+#CURRENCY_PAIRS = ["USDT_BTC", "USDT_ETH", "USDT_LTC", "USDT_ZEC", "USDT_ETC", "USDT_REP", "USDT_XMR", "USDT_STR", "USDT_DASH", "USDT_XRP", "USDT_BCH", "USDT_NXT"]
+
+CURRENCY_PAIRS = list({coin_pair for coin_pair in exchange.get_all_coin_pairs() if "BTC" in coin_pair or "USDT" in coin_pair})
 
 
 def get_data():
-    print("Getting data from exchange.")
+    print("Getting data from exchange. For {0}".format(CURRENCY_PAIRS))
     all_data = []
     for currency_pair in CURRENCY_PAIRS:
         data = exchange.get_chart_data(currency_pair)
@@ -28,20 +30,41 @@ def get_data():
 def generate_automatic(data, file_name, number_of_samples):
     print("Generating data for training.")
     last_progress = -1
-    with open(file_name, "w", buffering=10000) as fp:
+    with open(file_name, "w", buffering=100000) as fp:
         for p in range(number_of_samples):
             coin_data = random.choice(data)
-            start = random.randint(0, len(coin_data) - RANGE - RANGE_AFTER)
+            start = random.randint(1, len(coin_data) - RANGE - RANGE_AFTER)
 
             stimulus = []
             for i in range(start, start + RANGE):
-                stimulus.append(float(coin_data[i]["open"]))
-                stimulus.append(float(coin_data[i]["close"]))
-                stimulus.append(float(coin_data[i]["low"]))
-                stimulus.append(float(coin_data[i]["high"]))
+                open_ = float(coin_data[i]["open"])
+                close = float(coin_data[i]["close"])
+                low = float(coin_data[i]["low"])
+                high = float(coin_data[i]["high"])
+
+                stimulus.append(helper.calculate_difference(open_, close))
+                stimulus.append(helper.calculate_difference(open_, low))
+                stimulus.append(helper.calculate_difference(open_, high))
+                stimulus.append(helper.calculate_difference(close, low))
+                stimulus.append(helper.calculate_difference(close, high))
+                stimulus.append(helper.calculate_difference(low, high))
+
+                previous_open = float(coin_data[i-1]["open"])
+                previous_close = float(coin_data[i-1]["close"])
+                previous_low = float(coin_data[i-1]["low"])
+                previous_high = float(coin_data[i-1]["high"])
+
+                stimulus.append(helper.calculate_difference(open_, previous_open))
+                stimulus.append(helper.calculate_difference(close, previous_close))
+                stimulus.append(helper.calculate_difference(low, previous_low))
+                stimulus.append(helper.calculate_difference(high, previous_high))
 
             expected = expected_output(coin_data, start)
-            fp.write(";".join([str(d) for d in stimulus + expected]) + "\n")
+            if expected == [0.0, 0.0, 1.0]:
+                if start%3 == 0:
+                    fp.write(";".join([str(d) for d in stimulus + expected]) + "\n")
+            else:
+                fp.write(";".join([str(d) for d in stimulus + expected]) + "\n")
 
             progress = round(p/number_of_samples*100)
             if last_progress != progress:
