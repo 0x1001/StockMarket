@@ -5,8 +5,8 @@ mqtt_config.txt
 .venv
 __pyc__
 _*.png
-training_data_db.pkl
 tmp
 batch.bat
 log.txt
 *.csv
+*.pkl

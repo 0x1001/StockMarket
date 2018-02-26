@@ -2,17 +2,20 @@ import argparse
 import exchange
 import random
 import helper
+import pickle
+import os
 
 TRAINING_DB_FILE = "training_data_db.csv"
 TEST_DB_FILE = "test_data_db.csv"
-RANGE = 5
+RANGE = 20
 RANGE_AFTER = 10
+
+EXCHANGE_DATA = "exchange_db.pkl"
 
 TRAIN_DATA_SIZE = 10000000
 TEST_DATA_SIZE = round(TRAIN_DATA_SIZE * 0.01)
 
 #CURRENCY_PAIRS = ["USDT_BTC", "USDT_ETH", "USDT_LTC", "USDT_ZEC", "USDT_ETC", "USDT_REP", "USDT_XMR", "USDT_STR", "USDT_DASH", "USDT_XRP", "USDT_BCH", "USDT_NXT"]
-
 CURRENCY_PAIRS = list({coin_pair for coin_pair in exchange.get_all_coin_pairs() if "BTC" in coin_pair or "USDT" in coin_pair})
 
 
@@ -20,8 +23,17 @@ def get_data():
     print("Getting data from exchange. For {0}".format(CURRENCY_PAIRS))
     all_data = []
     for currency_pair in CURRENCY_PAIRS:
-        data = exchange.get_chart_data(currency_pair)
-        all_data.append(data)
+        path = currency_pair + "_" + EXCHANGE_DATA
+        if os.path.isfile(path):
+            with open(path, "rb") as fp:
+                all_data.append(pickle.load(fp))
+        else:
+            data = exchange.get_chart_data(currency_pair)
+            all_data.append(data)
+
+            with open(path, "wb") as fp:
+                pickle.dump(data, fp)
+
         print("Progress {2}: {0} / {1}".format(CURRENCY_PAIRS.index(currency_pair), len(CURRENCY_PAIRS), currency_pair))
 
     return all_data

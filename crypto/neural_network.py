@@ -4,9 +4,9 @@ import generate_training_data
 
 
 n_input = 10 * generate_training_data.RANGE
-n_nodes_hl1 = 64
-n_nodes_hl2 = 32
-n_nodes_hl3 = 16
+n_nodes_hl1 = 128
+n_nodes_hl2 = 64
+n_nodes_hl3 = 32
 
 n_classes = 3  # One hot for "buy", "sell", "hold"
 batch_size = 100
