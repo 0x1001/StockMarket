@@ -28,7 +28,7 @@ def get_chart_data(currency_pair):
 def get_all_coin_pairs():
     polo = poloniex.Poloniex()
     data = polo.returnTicker()
-    return data.keys()
+    return list(data.keys())
 
 
 def plot_chart_data(data, currency_pair, file_name=None, ymin=None, ymax=None):

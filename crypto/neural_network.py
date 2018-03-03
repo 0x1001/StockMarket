@@ -4,9 +4,9 @@ import generate_training_data
 
 
 n_input = 10 * generate_training_data.RANGE
-n_nodes_hl1 = 128
-n_nodes_hl2 = 64
-n_nodes_hl3 = 32
+n_nodes_hl1 = 512
+n_nodes_hl2 = 128
+n_nodes_hl3 = 64
 
 n_classes = 3  # One hot for "buy", "sell", "hold"
 batch_size = 100
@@ -27,8 +27,6 @@ def neural_network_model(data):
 
     output_layer = {'weights': tf.Variable(tf.random_normal([n_nodes_hl3, n_classes])),
                     'biases': tf.Variable(tf.random_normal([n_classes])), }
-
-    #data_norm = tf.nn.l2_normalize(data)
 
     l1 = tf.add(tf.matmul(data, hidden_1_layer['weights']), hidden_1_layer['biases'])
     l1 = tf.nn.relu(l1)
@@ -70,6 +68,7 @@ def train_neural_network(x):
         accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
         test_samples, test_feedback = test_data()
         print('Accuracy:', accuracy.eval({x: test_samples, y: test_feedback}))
+        print('Test sample count:', len(test_samples))
 
 
 def batch_data(batch_size):
@@ -99,30 +98,35 @@ def _read_data(line):
 
 
 def test_data():
+    # Test data should have same amount of sell, buy and hold. It is easier to judge performance of neural network.
+    # For example neural network accuracy above 33% suggest better performance then randomness.
     with open(generate_training_data.TEST_DB_FILE, "r") as fp:
         data = fp.readlines()
 
-        x = []
-        y = []
+        sell_x = []
+        sell_y = []
         hold_x = []
         hold_y = []
+        buy_x = []
+        buy_y = []
         for line in data:
             if line != "":
                 stimuli_data, expected_data = _read_data(line)
                 if expected_data == [0.0, 0.0, 1.0]:
                     hold_x.append(stimuli_data)
                     hold_y.append(expected_data)
+                elif expected_data == [1.0, 0.0, 0.0]:
+                    buy_x.append(stimuli_data)
+                    buy_y.append(expected_data)
+                elif expected_data == [0.0, 1.0, 0.0]:
+                    sell_x.append(stimuli_data)
+                    sell_y.append(expected_data)
                 else:
-                    x.append(stimuli_data)
-                    y.append(expected_data)
+                    raise Exception("Wtf? {0}".format(expected_data))
 
-        hold_x = hold_x[:int(len(x)/2)]
-        hold_y = hold_y[:int(len(x)/2)]
+        smallest = min([len(sell_x), len(hold_x), len(buy_x)])
 
-        print("len(hold_x)", len(hold_x))
-        print("len(x)", len(x))
-
-        return x + hold_x, y + hold_y
+        return sell_x[:smallest] + buy_x[:smallest] + hold_x[:smallest], sell_y[:smallest] + hold_y[:smallest] + buy_y[:smallest]
 
 
 if __name__ == "__main__":

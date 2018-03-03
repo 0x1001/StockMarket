@@ -7,16 +7,16 @@ import os
 
 TRAINING_DB_FILE = "training_data_db.csv"
 TEST_DB_FILE = "test_data_db.csv"
-RANGE = 20
-RANGE_AFTER = 10
+RANGE = 20  # Number of data points from exchange. One data point corresponds to 5 min trading and has: Open, close, high, low prices. This is input for neural network.
+RANGE_AFTER = 30  # Number of data points considered for expected answer evaluation.
 
 EXCHANGE_DATA = "exchange_db.pkl"
 
-TRAIN_DATA_SIZE = 10000000
-TEST_DATA_SIZE = round(TRAIN_DATA_SIZE * 0.01)
+TRAIN_DATA_SIZE = 23000000  # Number of samples used for neural network training.
+TEST_DATA_SIZE = round(TRAIN_DATA_SIZE * 0.01)  # Number of samples used for neural network testing.
 
 #CURRENCY_PAIRS = ["USDT_BTC", "USDT_ETH", "USDT_LTC", "USDT_ZEC", "USDT_ETC", "USDT_REP", "USDT_XMR", "USDT_STR", "USDT_DASH", "USDT_XRP", "USDT_BCH", "USDT_NXT"]
-CURRENCY_PAIRS = list({coin_pair for coin_pair in exchange.get_all_coin_pairs() if "BTC" in coin_pair or "USDT" in coin_pair})
+CURRENCY_PAIRS = exchange.get_all_coin_pairs()
 
 
 def get_data():
@@ -42,7 +42,7 @@ def get_data():
 def generate_automatic(data, file_name, number_of_samples):
     print("Generating data for training.")
     last_progress = -1
-    with open(file_name, "w", buffering=100000) as fp:
+    with open(file_name, "w", buffering=10000) as fp:
         for p in range(number_of_samples):
             coin_data = random.choice(data)
             start = random.randint(1, len(coin_data) - RANGE - RANGE_AFTER)
@@ -72,11 +72,7 @@ def generate_automatic(data, file_name, number_of_samples):
                 stimulus.append(helper.calculate_difference(high, previous_high))
 
             expected = expected_output(coin_data, start)
-            if expected == [0.0, 0.0, 1.0]:
-                if start%3 == 0:
-                    fp.write(";".join([str(d) for d in stimulus + expected]) + "\n")
-            else:
-                fp.write(";".join([str(d) for d in stimulus + expected]) + "\n")
+            fp.write(";".join([str(d) for d in stimulus + expected]) + "\n")
 
             progress = round(p/number_of_samples*100)
             if last_progress != progress:
@@ -115,5 +111,5 @@ if __name__ == "__main__":
 
     if args.generate:
         data = get_data()
-        generate_automatic(data, TRAINING_DB_FILE, TRAIN_DATA_SIZE)
+        #generate_automatic(data, TRAINING_DB_FILE, TRAIN_DATA_SIZE)
         generate_automatic(data, TEST_DB_FILE, TEST_DATA_SIZE)
