@@ -3,10 +3,10 @@ import datetime
 import generate_training_data
 
 
-n_input = 17 * generate_training_data.RANGE
-n_nodes_hl1 = 128
-n_nodes_hl2 = 64
-n_nodes_hl3 = 32
+n_input = 16 * generate_training_data.RANGE
+n_nodes_hl1 = 512
+n_nodes_hl2 = 128
+n_nodes_hl3 = 64
 
 n_classes = 3  # One hot for "buy", "sell", "hold"
 batch_size = 1000

@@ -14,7 +14,7 @@ def get_chart_data(currency_pair):
     error = Exception("Cannot get data from exchange")
     for i in range(10):
         try:
-            data = polo.returnChartData(currency_pair, 300, start=(time.time() - 4*polo.YEAR), end=time.time())
+            data = polo.returnChartData(currency_pair, 300, start=(time.time() - 1*polo.YEAR), end=time.time())
         except poloniex.PoloniexError as error:
             pass
         else:
