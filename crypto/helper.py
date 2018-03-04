@@ -3,4 +3,7 @@ def calculate_difference_in_percent(first, second):
 
 
 def calculate_difference(first, second):
-    return float((second - first)/first)
+    if first != 0:
+        return float((second - first)/first)
+    else:
+        return float((second - first))

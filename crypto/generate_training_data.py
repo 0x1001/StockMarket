@@ -7,7 +7,7 @@ import os
 
 TRAINING_DB_FILE = "training_data_db.csv"
 TEST_DB_FILE = "test_data_db.csv"
-RANGE = 20  # Number of data points from exchange. One data point corresponds to 5 min trading and has: Open, close, high, low prices. This is input for neural network.
+RANGE = 5  # Number of data points from exchange. One data point corresponds to 5 min trading and has: Open, close, high, low prices. This is input for neural network.
 RANGE_AFTER = 30  # Number of data points considered for expected answer evaluation.
 
 EXCHANGE_DATA = "exchange_db.pkl"
@@ -53,6 +53,7 @@ def generate_automatic(data, file_name, number_of_samples):
                 close = float(coin_data[i]["close"])
                 low = float(coin_data[i]["low"])
                 high = float(coin_data[i]["high"])
+                volume = float(coin_data[i]["volume"])
 
                 stimulus.append(helper.calculate_difference(open_, close))
                 stimulus.append(helper.calculate_difference(open_, low))
@@ -65,11 +66,21 @@ def generate_automatic(data, file_name, number_of_samples):
                 previous_close = float(coin_data[i-1]["close"])
                 previous_low = float(coin_data[i-1]["low"])
                 previous_high = float(coin_data[i-1]["high"])
+                previous_volume = float(coin_data[i-1]["volume"])
 
                 stimulus.append(helper.calculate_difference(open_, previous_open))
                 stimulus.append(helper.calculate_difference(close, previous_close))
                 stimulus.append(helper.calculate_difference(low, previous_low))
                 stimulus.append(helper.calculate_difference(high, previous_high))
+
+                stimulus.append(helper.calculate_difference(open_, previous_close))
+                stimulus.append(helper.calculate_difference(open_, previous_low))
+                stimulus.append(helper.calculate_difference(open_, previous_high))
+                stimulus.append(helper.calculate_difference(close, previous_low))
+                stimulus.append(helper.calculate_difference(close, previous_high))
+                stimulus.append(helper.calculate_difference(low, previous_high))
+
+                stimulus.append(helper.calculate_difference(volume, previous_volume))
 
             expected = expected_output(coin_data, start)
             fp.write(";".join([str(d) for d in stimulus + expected]) + "\n")
@@ -111,5 +122,5 @@ if __name__ == "__main__":
 
     if args.generate:
         data = get_data()
-        #generate_automatic(data, TRAINING_DB_FILE, TRAIN_DATA_SIZE)
+        generate_automatic(data, TRAINING_DB_FILE, TRAIN_DATA_SIZE)
         generate_automatic(data, TEST_DB_FILE, TEST_DATA_SIZE)

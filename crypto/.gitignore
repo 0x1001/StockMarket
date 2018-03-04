@@ -7,6 +7,6 @@ __pyc__
 _*.png
 tmp
 batch.bat
-log.txt
+*.txt
 *.csv
 *.pkl

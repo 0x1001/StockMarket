@@ -3,13 +3,13 @@ import datetime
 import generate_training_data
 
 
-n_input = 10 * generate_training_data.RANGE
-n_nodes_hl1 = 512
-n_nodes_hl2 = 128
-n_nodes_hl3 = 64
+n_input = 17 * generate_training_data.RANGE
+n_nodes_hl1 = 128
+n_nodes_hl2 = 64
+n_nodes_hl3 = 32
 
 n_classes = 3  # One hot for "buy", "sell", "hold"
-batch_size = 100
+batch_size = 1000
 
 x = tf.placeholder('float', [None, n_input])
 y = tf.placeholder('float')
