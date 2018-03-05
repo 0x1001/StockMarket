@@ -7,13 +7,13 @@ import os
 
 TRAINING_DB_FILE = "training_data_db.csv"
 TEST_DB_FILE = "test_data_db.csv"
-RANGE = 20  # Number of data points from exchange. One data point corresponds to 5 min trading and has: Open, close, high, low prices. This is input for neural network.
+RANGE = 100  # Number of data points from exchange. One data point corresponds to 5 min trading and has: Open, close, high, low prices. This is input for neural network.
 RANGE_AFTER = 30  # Number of data points considered for expected answer evaluation.
 
 EXCHANGE_DATA = "exchange_db.pkl"
 
-TRAIN_DATA_SIZE = 8000000  # Number of samples used for neural network training.
-TEST_DATA_SIZE = round(TRAIN_DATA_SIZE * 0.01)  # Number of samples used for neural network testing.
+TRAIN_DATA_SIZE = 1000000  # Number of samples used for neural network training.
+TEST_DATA_SIZE = round(TRAIN_DATA_SIZE * 0.1)  # Number of samples used for neural network testing.
 
 #CURRENCY_PAIRS = ["USDT_BTC", "USDT_ETH", "USDT_LTC", "USDT_ZEC", "USDT_ETC", "USDT_REP", "USDT_XMR", "USDT_STR", "USDT_DASH", "USDT_XRP", "USDT_BCH", "USDT_NXT"]
 CURRENCY_PAIRS = exchange.get_all_coin_pairs()
